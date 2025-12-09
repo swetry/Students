@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>ExamScore AI — визуализация нейросети и предикт</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            --bg: #0b1020;
+            --card: #141a33;
+            --accent: #4f9dff;
+            --accent-soft: rgba(79,157,255,0.1);
+            --text: #f5f5ff;
+            --muted: #a9b0d9;
+            --danger: #ff6f6f;
+            --success: #32d47b;
+        }
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1e2750 0, #050716 55%);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        .page {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 32px 16px 64px;
+        }
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: conic-gradient(from 210deg, #4f9dff, #32d47b, #ff6f6f, #4f9dff);
+            position: relative;
+        }
+        .logo-icon::after {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            background: #050716;
+        }
+        .logo-text-main {
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .logo-text-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .tagline {
+            font-size: 13px;
+            color: var(--muted);
+            max-width: 360px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: flex-start;
+        }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(8,12,35,0.9));
+            border-radius: 18px;
+            padding: 20px 20px 18px;
+            border: 1px solid rgba(105,133,255,0.32);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.5);
+            backdrop-filter: blur(18px);
+        }
+        .card + .card { margin-top: 18px; }
+        h1 {
+            font-size: 26px;
+            margin-bottom: 12px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .pill {
+            font-size: 11px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(79,157,255,0.35);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .pill-ghost {
+            background: rgba(255,255,255,0.02);
+            border-color: rgba(255,255,255,0.12);
+            color: var(--muted);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0,1fr));
+            gap: 12px 16px;
+            margin-top: 12px;
+        }
+        @media (max-width: 700px) {
+            .form-grid { grid-template-columns: minmax(0,1fr); }
+        }
+
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--muted);
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+        input, select {
+            background: #050716;
+            border-radius: 10px;
+            border: 1px solid rgba(139,157,255,0.55);
+            padding: 7px 9px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            transition: border 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+        }
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(79,157,255,0.4);
+            transform: translateY(-1px);
+        }
+        input::placeholder {
+            color: rgba(180,188,235,0.65);
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+            align-items: center;
+        }
+        button {
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            padding: 9px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: linear-gradient(120deg, #4f9dff, #32d47b);
+            color: #050716;
+            box-shadow: 0 12px 25px rgba(19, 158, 255, 0.37);
+            transition: transform 0.09s ease, box-shadow 0.09s ease, filter 0.09s ease;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 16px 35px rgba(19, 158, 255, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 8px 18px rgba(19, 158, 255, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.04);
+            color: var(--muted);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: none;
+        }
+
+        .metrics-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .metric-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.14);
+            font-size: 12px;
+        }
+        .metric-chip strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .metric-chip.danger strong { color: var(--danger); }
+        .metric-chip.success strong { color: var(--success); }
+
+        .architecture {
+            position: relative;
+            margin-top: 8px;
+        }
+        .layer-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+        .layer {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: rgba(5,7,22,0.88);
+            border: 1px solid rgba(121,144,255,0.45);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .layer-tag {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+        .layer-main {
+            font-weight: 500;
+        }
+        .layer-side {
+            text-align: right;
+            color: var(--muted);
+        }
+
+        .pyramid {
+            --height: 220px;
+            margin-top: 16px;
+            position: relative;
+            width: 100%;
+            height: var(--height);
+        }
+        .pyramid-level {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border-style: solid;
+            border-color: transparent;
+            opacity: 0.9;
+        }
+        .pyramid-level.input {
+            bottom: 0;
+            border-width: 26px 140px 0 140px;
+            border-top-color: rgba(79,157,255,0.23);
+        }
+        .pyramid-level.h1 {
+            bottom: 46px;
+            border-width: 26px 115px 0 115px;
+            border-top-color: rgba(114,211,255,0.23);
+        }
+        .pyramid-level.h2 {
+            bottom: 86px;
+            border-width: 26px 90px 0 90px;
+            border-top-color: rgba(50,212,123,0.23);
+        }
+        .pyramid-level.h3 {
+            bottom: 126px;
+            border-width: 26px 65px 0 65px;
+            border-top-color: rgba(255,210,92,0.23);
+        }
+        .pyramid-level.h4 {
+            bottom: 166px;
+            border-width: 26px 40px 0 40px;
+            border-top-color: rgba(255,111,111,0.23);
+        }
+        .pyramid-level.output {
+            bottom: 206px;
+            border-width: 18px 18px 0 18px;
+            border-top-color: rgba(255,255,255,0.7);
+        }
+        .pyramid-label {
+            position: absolute;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+        .pyramid-label.input  { bottom: 4px; left: 14px; }
+        .pyramid-label.h1     { bottom: 54px; left: 14px; }
+        .pyramid-label.h2     { bottom: 94px; left: 14px; }
+        .pyramid-label.h3     { bottom: 134px; left: 14px; }
+        .pyramid-label.h4     { bottom: 174px; left: 14px; }
+        .pyramid-label.output { bottom: 214px; left: 14px; }
+
+        .result-block {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(5,7,22,0.88);
+            border: 1px solid rgba(121,144,255,0.45);
+            font-size: 13px;
+        }
+        .result-main {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .result-main span {
+            color: var(--accent);
+        }
+        .result-sub {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .result-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .importance-list {
+            margin-top: 8px;
+            list-style: none;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .importance-list li {
+            margin-bottom: 3px;
+        }
+
+        .footnote {
+            margin-top: 12px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .error {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header>
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <div>
+                <div class="logo-text-main">ExamScore AI</div>
+                <div class="logo-text-sub">Нейросеть прогноза экзамена</div>
+            </div>
+        </div>
+        <div class="tagline">
+            Введите свой учебный профиль, чтобы увидеть, какой балл на экзамене прогнозирует оптимизированная нейросеть (MAE ≈ 8.2, R² ≈ 0.87).<br />
+        </div>
+    </header>
+
+    <div class="grid">
+        <!-- LEFT: ФОРМА ПОЛЬЗОВАТЕЛЯ -->
+        <section class="card">
+            <h1>Предикт твоего экзамена</h1>
+            <p class="muted">
+                Модель обучена на реальных данных студентов и учитывает баланс учёбы, сна и контекста курса. Результат — оценка от 0 до 100.
+            </p>
+            <div class="pill-row">
+                <div class="pill">Регрессия экзамена</div>
+                <div class="pill pill-ghost">Нейросеть + ансамбль</div>
+            </div>
+
+            <form id="exam-form">
+                <div class="form-grid">
+                    <!-- Числовые признаки -->
+                    <div class="field">
+                        <label for="age">Возраст</label>
+                        <input type="number" id="age" name="age" placeholder="Например, 20" min="15" max="60" step="1">
+                    </div>
+                    <div class="field">
+                        <label for="studyhours">Часы учёбы в день</label>
+                        <input type="number" id="studyhours" name="studyhours" placeholder="4.5" min="0" max="16" step="0.1">
+                    </div>
+                    <div class="field">
+                        <label for="classattendance">% посещаемости</label>
+                        <input type="number" id="classattendance" name="classattendance" placeholder="80" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="field">
+                        <label for="sleephours">Часы сна</label>
+                        <input type="number" id="sleephours" name="sleephours" placeholder="7.0" min="0" max="14" step="0.1">
+                    </div>
+
+                    <!-- Категории -->
+                    <div class="field">
+                        <label for="internetaccess">Доступ в интернет</label>
+                        <select id="internetaccess" name="internetaccess">
+                            <option value="">Выберите…</option>
+                            <option value="yes">Есть</option>
+                            <option value="no">Нет</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="gender">Пол</label>
+                        <select id="gender" name="gender">
+                            <option value="">Выберите…</option>
+                            <option value="male">Мужской</option>
+                            <option value="female">Женский</option>
+                            <option value="other">Другое</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="course">Курс</label>
+                        <select id="course" name="course">
+                            <option value="">Выберите…</option>
+                            <option value="b.tech">B.Tech</option>
+                            <option value="b.sc">B.Sc</option>
+                            <option value="ba">BA</option>
+                            <option value="diploma">Diploma</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="sleepquality">Качество сна</label>
+                        <select id="sleepquality" name="sleepquality">
+                            <option value="">Выберите…</option>
+                            <option value="poor">Плохое</option>
+                            <option value="average">Среднее</option>
+                            <option value="good">Хорошее</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="studymethod">Метод обучения</label>
+                        <select id="studymethod" name="studymethod">
+                            <option value="">Выберите…</option>
+                            <option value="self-study">Самостоятельно</option>
+                            <option value="coaching">Коучинг / репетитор</option>
+                            <option value="online videos">Онлайн‑видео</option>
+                            <option value="group study">Групповые занятия</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="facilityrating">Условия обучения</label>
+                        <select id="facilityrating" name="facilityrating">
+                            <option value="">Выберите…</option>
+                            <option value="low">Низкие</option>
+                            <option value="medium">Средние</option>
+                            <option value="high">Высокие</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="examdifficulty">Сложность экзамена</label>
+                        <select id="examdifficulty" name="examdifficulty">
+                            <option value="">Выберите…</option>
+                            <option value="easy">Лёгкий</option>
+                            <option value="moderate">Средний</option>
+                            <option value="hard">Сложный</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit">Предсказать балл</button>
+                    <button type="button" class="btn-secondary" id="btn-demo">Заполнить пример</button>
+                    <span class="muted" style="font-size: 11px;">Модель возвращает прогноз и краткий текстовый отчёт.</span>
+                </div>
+                <div id="form-error" class="error" style="display:none;"></div>
+            </form>
+
+            <div class="result-block" id="result-block" style="display:none;">
+                <div class="result-title">Прогноз нейросети</div>
+                <div class="result-main">
+                    Ожидаемый балл: <span id="pred-score">–</span> / 100
+                </div>
+                <div class="result-sub" id="pred-comment">
+                    Модель анализирует сочетание часов учёбы, посещаемости и сна и оценивает устойчивость результата.
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: АРХИТЕКТУРА + ОБУЧЕНИЕ -->
+        <section class="card">
+            <h2>Архитектура нейросети</h2>
+            <p class="muted">
+                Это полносвязная регрессионная сеть: на вход — профиль студента (24 признака), на выход — прогноз экзамена в диапазоне 0–100.
+            </p>
+
+            <div class="metrics-row">
+                <div class="metric-chip success"><strong>MAE ≈ 8.2</strong> на тесте</div>
+                <div class="metric-chip"><strong>RMSE ≈ 10.6</strong></div>
+                <div class="metric-chip"><strong>R² ≈ 0.87</strong> (≈ 87% вариации)</div>
+            </div>
+
+            <div class="architecture">
+                <ul class="layer-list">
+                    <li class="layer">
+                        <div class="layer-main">Входной слой</div>
+                        <div class="layer-tag">24 признака</div>
+                        <div class="layer-side">Возраст, учёба, посещаемость, сон, курс и др.</div>
+                    </li>
+                    <li class="layer">
+                        <div class="layer-main">Скрытый слой 1</div>
+                        <div class="layer-tag">128 нейронов · ReLU/LeakyReLU</div>
+                        <div class="layer-side">L2‑регуляризация, BatchNorm, Dropout 0.3</div>
+                    </li>
+                    <li class="layer">
+                        <div class="layer-main">Скрытый слой 2</div>
+                        <div class="layer-tag">64 нейрона · ReLU/LeakyReLU</div>
+                        <div class="layer-side">L2‑регуляризация, BatchNorm, Dropout 0.3</div>
+                    </li>
+                    <li class="layer">
+                        <div class="layer-main">Скрытый слой 3</div>
+                        <div class="layer-tag">32 нейрона · ReLU/LeakyReLU</div>
+                        <div class="layer-side">L2‑регуляризация, BatchNorm, Dropout 0.2</div>
+                    </li>
+                    <li class="layer">
+                        <div class="layer-main">Скрытый слой 4</div>
+                        <div class="layer-tag">16 нейронов · ReLU/LeakyReLU</div>
+                        <div class="layer-side">BatchNorm, Dropout 0.1</div>
+                    </li>
+                    <li class="layer">
+                        <div class="layer-main">Выходной слой</div>
+                        <div class="layer-tag">1 нейрон · Linear</div>
+                        <div class="layer-side">Прогноз балла 0–100</div>
+                    </li>
+                </ul>
+
+                <div class="pyramid">
+                    <div class="pyramid-level input"></div>
+                    <div class="pyramid-level h1"></div>
+                    <div class="pyramid-level h2"></div>
+                    <div class="pyramid-level h3"></div>
+                    <div class="pyramid-level h4"></div>
+                    <div class="pyramid-level output"></div>
+
+                    <div class="pyramid-label input">Вход: 24 признака</div>
+                    <div class="pyramid-label h1">128 нейронов</div>
+                    <div class="pyramid-label h2">64 нейрона</div>
+                    <div class="pyramid-label h3">32 нейрона</div>
+                    <div class="pyramid-label h4">16 нейронов</div>
+                    <div class="pyramid-label output">Выход: балл</div>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 16px;">Обучение и ключевые аспекты</h2>
+            <p class="muted">
+                Модель обучена методом Adam/Nadam с функцией потерь Huber/MSE, batch‑size 32, с ранней остановкой, снижением learning rate и сохранением лучшей модели.
+            </p>
+
+            <ul class="importance-list">
+                <li><strong>Топ‑факторы влияния:</strong> посещаемость занятий, часы учёбы, продолжительность сна, выбранный курс, качество сна.</li>
+                <li><strong>Предобработка:</strong> кодирование категорий (Label/One‑Hot), стандартизация числовых признаков (Z‑score).</li>
+                <li><strong>Регуляризация:</strong> L1/L2‑штрафы, Dropout, Batch Normalization по каждому скрытому слою.</li>
+                <li><strong>Валидация:</strong> отложенная выборка + k‑fold, сравнение с Random Forest, Gradient Boosting, XGBoost и ансамблем.</li>
+            </ul>
+
+            <div class="result-block" style="margin-top: 10px;">
+                <div class="result-title">Как читать предикт</div>
+                <div class="result-sub">
+                    MAE ≈ 8.2 означает, что средняя ошибка — около 8 баллов. Для прогноза 78 реальный результат часто будет в коридоре примерно 70–86 при похожем профиле данных.
+                </div>
+            </div>
+
+            <div class="footnote">
+                Backend‑часть (функция предсказания) должна использовать сохранённую модель
+                <code>bestexampredictor.keras</code> или <code>.pkl</code>, а также тот же <code>scaler</code> и порядок признаков.
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    // TODO: замените URL на реальный эндпоинт вашего backend-а,
+    // который принимает JSON с признаками и возвращает { prediction: число, comment: строка }.
+    const API_URL = "http://127.0.0.1:8000/predict";
+
+    const form = document.getElementById("exam-form");
+    const btnDemo = document.getElementById("btn-demo");
+    const resultBlock = document.getElementById("result-block");
+    const predScoreEl = document.getElementById("pred-score");
+    const predCommentEl = document.getElementById("pred-comment");
+    const errorEl = document.getElementById("form-error");
+
+    btnDemo.addEventListener("click", () => {
+        document.getElementById("age").value = 20;
+        document.getElementById("studyhours").value = 6.5;
+        document.getElementById("classattendance").value = 92;
+        document.getElementById("sleephours").value = 7.5;
+        document.getElementById("internetaccess").value = "yes";
+        document.getElementById("gender").value = "female";
+        document.getElementById("course").value = "b.sc";
+        document.getElementById("sleepquality").value = "good";
+        document.getElementById("studymethod").value = "coaching";
+        document.getElementById("facilityrating").value = "high";
+        document.getElementById("examdifficulty").value = "moderate";
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.style.display = "none";
+        resultBlock.style.display = "none";
+
+        const data = {
+            age: parseFloat(document.getElementById("age").value),
+            studyhours: parseFloat(document.getElementById("studyhours").value),
+            classattendance: parseFloat(document.getElementById("classattendance").value),
+            sleephours: parseFloat(document.getElementById("sleephours").value),
+            internetaccess: document.getElementById("internetaccess").value || null,
+            gender: document.getElementById("gender").value || null,
+            course: document.getElementById("course").value || null,
+            sleepquality: document.getElementById("sleepquality").value || null,
+            studymethod: document.getElementById("studymethod").value || null,
+            facilityrating: document.getElementById("facilityrating").value || null,
+            examdifficulty: document.getElementById("examdifficulty").value || null
+        };
+
+        // быстрая валидация
+        if (isNaN(data.age) || isNaN(data.studyhours) || isNaN(data.classattendance) || isNaN(data.sleephours)) {
+            errorEl.textContent = "Пожалуйста, заполните все числовые поля (возраст, часы учёбы, посещаемость, сон).";
+            errorEl.style.display = "block";
+            return;
+        }
+
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) {
+                throw new Error("Ошибка ответа сервера");
+            }
+
+            const json = await res.json();
+            const prediction = typeof json.prediction === "number" ? json.prediction : null;
+            const comment = json.comment || "";
+
+            if (prediction == null) {
+                throw new Error("Некорректный формат ответа модели");
+            }
+
+            const rounded = Math.round(prediction * 10) / 10;
+            predScoreEl.textContent = rounded.toString();
+            predCommentEl.textContent = comment || "Прогноз основан на твоём балансе учёбы, посещаемости и сна по обучающей выборке.";
+
+            resultBlock.style.display = "block";
+        } catch (err) {
+            console.error(err);
+            errorEl.textContent = "Не удалось получить предсказание. Проверь backend‑эндпоинт или попробуй позже.";
+            errorEl.style.display = "block";
+        }
+    });
+</script>
+</body>
+</html>
